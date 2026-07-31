@@ -16,15 +16,16 @@ export class TestPlansTreeDataProvider implements vscode.TreeDataProvider<vscode
   }
 
   public getTreeItem(element: vscode.Uri): vscode.TreeItem {
-    const item = new vscode.TreeItem(element, vscode.TreeItemCollapsibleState.None);
-    item.contextValue = 'jmx';
+    const item = new vscode.TreeItem(vscode.Uri.file(element.fsPath), vscode.TreeItemCollapsibleState.None);
+    item.contextValue = 'jmeterTestPlan';
     item.command = { command: 'jmeter.selectTestPlan', title: 'Open', arguments: [element] };
-    item.description = element.path;
+    item.description = element.fsPath;
+    item.tooltip = element.fsPath;
     return item;
   }
 
   private async listJmxFiles(): Promise<vscode.Uri[]> {
     const files = await vscode.workspace.findFiles('**/*.jmx', '{node_modules,.git,.jmeter-runs,dist,out}/**');
-    return files;
+    return files.sort((a, b) => a.fsPath.localeCompare(b.fsPath, undefined, { sensitivity: 'base' }));
   }
 }

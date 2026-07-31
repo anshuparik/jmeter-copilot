@@ -11,17 +11,14 @@ import { SpawnJmeter } from './spawnJmeter';
 
 export class JMeterRunner {
   private currentProcess?: any;
-  public run: (jmxPath: string) => Promise<TestRun>;
 
   constructor(
     private readonly outputChannel: vscode.OutputChannel,
     private readonly runStore: RunStore,
     private readonly recentRunsStore: RecentRunsStore
-  ) {
-    this.run = this.runInternal.bind(this);
-  }
+  ) {}
 
-  public async runInternal(jmxPath: string): Promise<TestRun> {
+  public async run(jmxPath: string, pollCallback?: (jtlPath: string) => void): Promise<TestRun> {
     const resolvedPath = path.resolve(jmxPath);
     const resultsDir = this.getResultsDir();
     fs.mkdirSync(resultsDir, { recursive: true });
@@ -49,6 +46,7 @@ export class JMeterRunner {
 
     const child = await SpawnJmeter.run(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     this.currentProcess = child;
+    pollCallback?.(jtlPath);
 
     if (child.stdout) {
       child.stdout.on('data', (data: Buffer) => {
@@ -65,7 +63,7 @@ export class JMeterRunner {
       child.on('exit', (code: number | null) => resolve(code));
     });
 
-    const samples = this.parseSamples(jtlPath);
+    const samples = await this.parseSampleFile(jtlPath);
     const summary = this.computeSummary(samples);
     run.summary = { ...summary, filePath: resolvedPath, startedAt: run.startedAt, completedAt: Date.now() };
     run.samples = samples;
@@ -95,7 +93,7 @@ export class JMeterRunner {
     }
   }
 
-  private parseSamples(jtlPath: string): SampleResult[] {
+  public async parseSampleFile(jtlPath: string): Promise<SampleResult[]> {
     if (!fs.existsSync(jtlPath)) {
       return [];
     }

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { registerCommands } from './commands';
 import { JMeterChatParticipant } from './chat/participant';
 import { JMeterRunner } from './jmeter/runner';
+import { RunController } from './runController';
 import { RunStore } from './model/runStore';
 import { RecentRunsStore } from './model/recentRuns';
 import { registerTools } from './tools';
@@ -12,20 +13,13 @@ import { JMeterStatusBar } from './statusBar';
 
 export function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel('JMeter Copilot');
-  outputChannel.appendLine('JMeter Copilot activated');
   context.subscriptions.push(outputChannel);
 
   const runStore = new RunStore();
   const recentRunsStore = new RecentRunsStore(context);
   const runner = new JMeterRunner(outputChannel, runStore, recentRunsStore);
+  const runController = new RunController(runner, runStore);
   const statusBar = new JMeterStatusBar();
-  const updateStatusBar = (run?: { summary: { total: number; passed: number; failed: number } }) => {
-    if (!run) {
-      statusBar.updateIdle();
-      return;
-    }
-    statusBar.updateDone(`${run.summary.passed}/${run.summary.total} passed`, run.summary.failed);
-  };
   const resultsPanel = new ResultsPanel();
 
   const testPlansProvider = new TestPlansTreeDataProvider();
@@ -36,8 +30,10 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(testPlansView, recentRunsView);
 
   const currentPlanPath = { value: undefined as string | undefined };
+
   registerCommands(context, {
     runner,
+    runController,
     outputChannel,
     currentPlanPath,
     testPlansProvider,
@@ -48,39 +44,73 @@ export function activate(context: vscode.ExtensionContext) {
   });
   registerTools(context, runner, runStore);
 
-  const chatParticipant = new JMeterChatParticipant();
-  chatParticipant.register(context);
+  const updateStatus = (state: { status: string; summary?: { total: number; passed: number; failed: number }; sampleCount?: number }) => {
+    if (state.status === 'running') {
+      statusBar.updateRunning(state.sampleCount ?? 0);
+      return;
+    }
 
-  context.subscriptions.push(statusBar);
-  context.subscriptions.push(resultsPanel);
+    if (state.status === 'done' && state.summary) {
+      statusBar.updateDone(`${state.summary.passed}/${state.summary.total} passed`, state.summary.failed);
+      return;
+    }
 
-  const originalRun = runner.run.bind(runner);
-  runner.run = async (jmxPath: string) => {
-    statusBar.updateRunning(0);
-    const run = await originalRun(jmxPath);
-    updateStatusBar(run);
-    return run;
+    statusBar.updateIdle();
   };
+
+  runController.onDidChangeState(updateStatus);
+  runController.onDidUpdateSamples((summary) => {
+    statusBar.updateRunning(summary.total);
+    resultsPanel.postMessage({ type: 'live', summary });
+  });
+  runController.onDidFinish((run) => {
+    resultsPanel.createOrShow();
+    resultsPanel.postMessage({ type: 'results', run });
+    recentRunsProvider.refresh();
+    testPlansProvider.refresh();
+  });
+
+  resultsPanel.onDidReceiveMessage(async (message: { command?: string }) => {
+    if (!message || typeof message.command !== 'string') {
+      return;
+    }
+
+    if (message.command === 'start') {
+      await vscode.commands.executeCommand('jmeter.runTest');
+      return;
+    }
+
+    if (message.command === 'stop') {
+      await vscode.commands.executeCommand('jmeter.stop');
+      return;
+    }
+
+    if (message.command === 'clear') {
+      await vscode.commands.executeCommand('jmeter.clearResults');
+      return;
+    }
+  });
 
   const watcher = vscode.workspace.createFileSystemWatcher('**/*.jmx');
   watcher.onDidCreate(() => testPlansProvider.refresh());
   watcher.onDidDelete(() => testPlansProvider.refresh());
+  watcher.onDidChange(() => testPlansProvider.refresh());
   context.subscriptions.push(watcher);
 
   vscode.window.onDidChangeActiveTextEditor((editor) => {
     const uri = editor?.document.uri;
     if (uri?.fsPath.toLowerCase().endsWith('.jmx')) {
       currentPlanPath.value = uri.fsPath;
+      resultsPanel.postMessage({ type: 'plan', path: uri.fsPath });
     }
   });
 
-  context.subscriptions.push(vscode.commands.registerCommand('jmeter.runTest', async (uri?: vscode.Uri) => {
-    const target = uri ?? vscode.window.activeTextEditor?.document.uri;
-    if (target) {
-      currentPlanPath.value = target.fsPath;
-      await runner.run(target.fsPath);
-    }
-  }));
+  const chatParticipant = new JMeterChatParticipant();
+  chatParticipant.register(context);
+
+  context.subscriptions.push(statusBar);
+  context.subscriptions.push(resultsPanel);
+  context.subscriptions.push(runController);
 
   void vscode.commands.executeCommand('setContext', 'jmeter.isReady', true);
 }

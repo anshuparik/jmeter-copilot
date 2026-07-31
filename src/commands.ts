@@ -1,14 +1,16 @@
-import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { JMeterRunner } from './jmeter/runner';
+import { RunController } from './runController';
 import { RecentRunsStore } from './model/recentRuns';
 import { RunStore } from './model/runStore';
 import { RecentRunsTreeDataProvider } from './view/recentRunsTree';
 import { ResultsPanel } from './view/resultsPanel';
 import { TestPlansTreeDataProvider } from './view/testPlansTree';
+import { resolveJmxTarget } from './util/jmxResolver';
 
 interface CommandDependencies {
   runner: JMeterRunner;
+  runController: RunController;
   outputChannel: vscode.OutputChannel;
   currentPlanPath: { value?: string };
   testPlansProvider: TestPlansTreeDataProvider;
@@ -19,33 +21,6 @@ interface CommandDependencies {
 }
 
 export function registerCommands(context: vscode.ExtensionContext, deps: CommandDependencies): void {
-  const resolveUri = async (uri?: vscode.Uri): Promise<vscode.Uri | undefined> => {
-    if (uri) {
-      return uri;
-    }
-
-    const active = vscode.window.activeTextEditor?.document.uri;
-    if (active?.fsPath.toLowerCase().endsWith('.jmx')) {
-      return active;
-    }
-
-    if (deps.currentPlanPath.value && fs.existsSync(deps.currentPlanPath.value)) {
-      return vscode.Uri.file(deps.currentPlanPath.value);
-    }
-
-    const files = await vscode.workspace.findFiles('**/*.jmx', '{node_modules,.git,.jmeter-runs,dist,out}/**');
-    if (files.length === 1) {
-      return files[0];
-    }
-
-    if (files.length > 1) {
-      const picked = await vscode.window.showQuickPick(files.map((file) => ({ label: file.fsPath, description: file.fsPath })), { placeHolder: 'Select a JMeter test plan' });
-      return picked ? picked.label ? vscode.Uri.file(picked.label) : undefined : undefined;
-    }
-
-    const dialog = await vscode.window.showOpenDialog({ canSelectMany: false, filters: { 'JMeter test plans': ['jmx'] } });
-    return dialog?.[0];
-  };
 
   const setCurrentPlan = (uri?: vscode.Uri): void => {
     if (uri) {
@@ -59,7 +34,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
   }));
 
   context.subscriptions.push(vscode.commands.registerCommand('jmeter.selectTestPlan', async (uri?: vscode.Uri) => {
-    const resolved = await resolveUri(uri);
+    const resolved = await resolveJmxTarget(uri, deps.currentPlanPath.value);
     if (!resolved) {
       return;
     }
@@ -73,12 +48,12 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
 
   context.subscriptions.push(vscode.commands.registerCommand('jmeter.runTest', async (uri?: vscode.Uri) => {
     try {
-      const resolved = await resolveUri(uri);
+      const resolved = await resolveJmxTarget(uri, deps.currentPlanPath.value);
       if (!resolved) {
         throw new Error('No JMeter test plan selected.');
       }
       setCurrentPlan(resolved);
-      await deps.runner.run(resolved.fsPath);
+      await deps.runController.start(resolved.fsPath);
       deps.resultsPanel.createOrShow();
       deps.recentRunsProvider.refresh();
       deps.testPlansProvider.refresh();
@@ -90,11 +65,12 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
   }));
 
   context.subscriptions.push(vscode.commands.registerCommand('jmeter.stop', () => {
-    deps.runner.stop();
+    deps.runController.stop();
     deps.outputChannel.appendLine('Stop requested.');
   }));
 
   context.subscriptions.push(vscode.commands.registerCommand('jmeter.clearResults', () => {
+    deps.runController.clear();
     deps.runStore.clear();
     deps.resultsPanel.clear();
     deps.outputChannel.appendLine('Results cleared.');

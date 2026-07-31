@@ -1,15 +1,9 @@
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { RecentRunsStore } from '../model/recentRuns';
+import { RecentRunsStore, RecentRunEntry } from '../model/recentRuns';
 
-interface RecentRunNode {
-  label: string;
-  path: string;
-  description: string;
-}
-
-export class RecentRunsTreeDataProvider implements vscode.TreeDataProvider<RecentRunNode> {
-  private readonly _onDidChangeTreeData = new vscode.EventEmitter<RecentRunNode | undefined>();
+export class RecentRunsTreeDataProvider implements vscode.TreeDataProvider<RecentRunEntry> {
+  private readonly _onDidChangeTreeData = new vscode.EventEmitter<RecentRunEntry | undefined>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   constructor(private readonly recentRunsStore: RecentRunsStore) {}
@@ -18,25 +12,21 @@ export class RecentRunsTreeDataProvider implements vscode.TreeDataProvider<Recen
     this._onDidChangeTreeData.fire(undefined);
   }
 
-  public async getChildren(): Promise<RecentRunNode[]> {
+  public async getChildren(): Promise<RecentRunEntry[]> {
     const recent = await this.recentRunsStore.list();
-    return recent.map((item) => {
-      const exists = fs.existsSync(item.jmxPath);
-      const relativeTime = this.getRelativeTime(item.lastRunAt);
-      const status = exists ? '' : ' (missing)';
-      return {
-        label: `${item.passed}/${item.total} passed`,
-        path: item.jmxPath,
-        description: `${relativeTime}${status}`
-      };
-    });
+    return recent.sort((a, b) => b.lastRunAt - a.lastRunAt);
   }
 
-  public async getTreeItem(element: RecentRunNode): Promise<vscode.TreeItem> {
-    const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
-    item.description = element.description;
-    item.contextValue = 'recent';
-    item.command = { command: 'jmeter.selectTestPlan', title: 'Open', arguments: [vscode.Uri.file(element.path)] };
+  public async getTreeItem(element: RecentRunEntry): Promise<vscode.TreeItem> {
+    const exists = fs.existsSync(element.jmxPath);
+    const relativeTime = this.getRelativeTime(element.lastRunAt);
+    const display = `${element.passed}/${element.total} passed`;
+    const item = new vscode.TreeItem(display, vscode.TreeItemCollapsibleState.None);
+    item.description = `${relativeTime}${exists ? '' : ' (missing)'}`;
+    item.tooltip = `${element.jmxPath}${exists ? '' : ' (missing file)'}`;
+    item.contextValue = exists ? 'jmeterRecentRun' : 'jmeterRecentRunMissing';
+    item.command = exists ? { command: 'jmeter.selectTestPlan', title: 'Open', arguments: [vscode.Uri.file(element.jmxPath)] } : undefined;
+    item.iconPath = exists ? undefined : new vscode.ThemeIcon('warning');
     return item;
   }
 

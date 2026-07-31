@@ -3,6 +3,7 @@
   "displayName": "JMeter Copilot",
   "description": "Run JMeter tests from VS Code with Copilot integration",
   "version": "0.1.0",
+  "icon": "media/jmeter.png",
   "publisher": "replace-me",
   "license": "MIT",
   "repository": {
@@ -137,6 +138,34 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "jmeterTestPlans",
+        "contents": "Browse discovered JMeter test plans and run them from the sidebar.",
+        "when": "view == jmeterTestPlans",
+        "commands": [
+          {
+            "command": "jmeter.refreshTestPlans",
+            "title": "Refresh Plans"
+          },
+          {
+            "command": "jmeter.runTest",
+            "title": "Run a JMeter Plan"
+          }
+        ]
+      },
+      {
+        "view": "jmeterRecentRuns",
+        "contents": "See the latest JMeter runs and start them again from the sidebar.",
+        "when": "view == jmeterRecentRuns",
+        "commands": [
+          {
+            "command": "jmeter.clearRecent",
+            "title": "Clear Recent Runs"
+          }
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "jmeter.runTest",
@@ -182,13 +211,52 @@
           "when": "resourceExtname == .jmx"
         }
       ],
-      "commandPalette": [
+      "view/title": [
         {
-          "command": "jmeter.removeRecent",
-          "when": "false"
+          "command": "jmeter.showResults",
+          "when": "view == jmeterTestPlans",
+          "group": "navigation"
+        },
+        {
+          "command": "jmeter.stop",
+          "when": "view == jmeterTestPlans",
+          "group": "navigation"
+        },
+        {
+          "command": "jmeter.refreshTestPlans",
+          "when": "view == jmeterTestPlans",
+          "group": "navigation"
         },
         {
           "command": "jmeter.clearRecent",
+          "when": "view == jmeterRecentRuns",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "jmeter.runTestPlan",
+          "when": "view == jmeterTestPlans && viewItem == jmeterTestPlan",
+          "group": "inline"
+        },
+        {
+          "command": "jmeter.runTestPlan",
+          "when": "view == jmeterRecentRuns && (viewItem == jmeterRecentRun || viewItem == jmeterRecentRunMissing)",
+          "group": "inline"
+        },
+        {
+          "command": "jmeter.removeRecent",
+          "when": "view == jmeterRecentRuns && (viewItem == jmeterRecentRun || viewItem == jmeterRecentRunMissing)",
+          "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "jmeter.runTestPlan",
+          "when": "false"
+        },
+        {
+          "command": "jmeter.removeRecent",
           "when": "false"
         }
       ]
@@ -235,6 +303,6 @@
     }
   },
   "activationEvents": [
-    "onStartupFinished"
+    "workspaceContains:**/*.jmx"
   ]
 }
