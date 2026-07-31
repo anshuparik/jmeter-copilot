@@ -1,0 +1,236 @@
+{
+  "name": "jmeter-copilot",
+  "displayName": "JMeter Copilot",
+  "description": "Run JMeter tests from VS Code with Copilot integration",
+  "version": "0.1.0",
+  "publisher": "replace-me",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "compile": "npm run check-types && node esbuild.js",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && node esbuild.js --production",
+    "vscode:prepublish": "npm run package",
+    "vsix": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.6.3"
+  },
+  "contributes": {
+    "languageModelTools": [
+      {
+        "name": "run_jmeter_test",
+        "displayName": "Run JMeter Test",
+        "modelDescription": "Run a JMeter test plan and return a short summary.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "planPath": {
+              "type": "string",
+              "description": "Absolute path to the JMX file"
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional description"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_jmeter_failures",
+        "displayName": "Get JMeter Failures",
+        "modelDescription": "Get failed samples from the latest or selected JMeter run.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "get_jmeter_sample_detail",
+        "displayName": "Get JMeter Sample Detail",
+        "modelDescription": "Get sample detail for a specific JMeter label.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "runId": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "list_jmeter_tests",
+        "displayName": "List JMeter Tests",
+        "modelDescription": "List discovered JMX files in the workspace.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "jmeter.participant",
+        "name": "JMeter",
+        "description": "Run and inspect JMeter test plans",
+        "commands": [
+          {
+            "name": "run",
+            "description": "Run a JMeter test plan"
+          },
+          {
+            "name": "failures",
+            "description": "Show failing samples"
+          },
+          {
+            "name": "fix",
+            "description": "Suggest fixes for failures"
+          }
+        ]
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "jmeterRunner",
+          "title": "JMeter",
+          "icon": "media/jmeter.svg"
+        }
+      ]
+    },
+    "views": {
+      "jmeterRunner": [
+        {
+          "id": "jmeterTestPlans",
+          "name": "Test Plans"
+        },
+        {
+          "id": "jmeterRecentRuns",
+          "name": "Recent Runs"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "jmeter.runTest",
+        "title": "JMeter: Run Test"
+      },
+      {
+        "command": "jmeter.runTestPlan",
+        "title": "JMeter: Run Selected Test Plan"
+      },
+      {
+        "command": "jmeter.selectTestPlan",
+        "title": "JMeter: Select Test Plan"
+      },
+      {
+        "command": "jmeter.stop",
+        "title": "JMeter: Stop"
+      },
+      {
+        "command": "jmeter.clearResults",
+        "title": "JMeter: Clear Results"
+      },
+      {
+        "command": "jmeter.refreshTestPlans",
+        "title": "JMeter: Refresh Test Plans"
+      },
+      {
+        "command": "jmeter.showResults",
+        "title": "JMeter: Show Results"
+      },
+      {
+        "command": "jmeter.clearRecent",
+        "title": "JMeter: Clear Recent"
+      },
+      {
+        "command": "jmeter.removeRecent",
+        "title": "JMeter: Remove Recent"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "jmeter.runTest",
+          "when": "resourceExtname == .jmx"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "jmeter.removeRecent",
+          "when": "false"
+        },
+        {
+          "command": "jmeter.clearRecent",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "JMeter",
+      "properties": {
+        "jmeter.executablePath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the JMeter executable"
+        },
+        "jmeter.jmeterHome": {
+          "type": "string",
+          "default": "",
+          "description": "JMeter home directory"
+        },
+        "jmeter.javaPath": {
+          "type": "string",
+          "default": "",
+          "description": "Java executable path"
+        },
+        "jmeter.maxResponseBytes": {
+          "type": "number",
+          "default": 100000,
+          "description": "Maximum response bytes to keep"
+        },
+        "jmeter.captureResponseData": {
+          "type": "boolean",
+          "default": true,
+          "description": "Capture response bodies and headers"
+        },
+        "jmeter.resultsDirectory": {
+          "type": "string",
+          "default": "",
+          "description": "Directory for JMeter results"
+        },
+        "jmeter.extraProperties": {
+          "type": "object",
+          "default": {},
+          "description": "Extra JMeter properties"
+        }
+      }
+    }
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ]
+}

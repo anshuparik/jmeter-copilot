@@ -1,0 +1,10 @@
+**/*.ts
+**/*.map
+.vscode/
+.gitignore
+.eslintrc*
+node_modules/**
+src/**
+examples/**
+media/*.svg
+README.md
