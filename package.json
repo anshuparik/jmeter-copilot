@@ -169,11 +169,13 @@
     "commands": [
       {
         "command": "jmeter.runTest",
-        "title": "JMeter: Run Test"
+        "title": "JMeter: Run Test",
+        "icon": "$(play)"
       },
       {
         "command": "jmeter.runTestPlan",
-        "title": "JMeter: Run Selected Test Plan"
+        "title": "Run Test Plan",
+        "icon": "$(play)"
       },
       {
         "command": "jmeter.selectTestPlan",
@@ -181,27 +183,33 @@
       },
       {
         "command": "jmeter.stop",
-        "title": "JMeter: Stop"
+        "title": "JMeter: Stop",
+        "icon": "$(debug-stop)"
       },
       {
         "command": "jmeter.clearResults",
-        "title": "JMeter: Clear Results"
+        "title": "JMeter: Clear Results",
+        "icon": "$(clear-all)"
       },
       {
         "command": "jmeter.refreshTestPlans",
-        "title": "JMeter: Refresh Test Plans"
+        "title": "JMeter: Refresh Test Plans",
+        "icon": "$(refresh)"
       },
       {
         "command": "jmeter.showResults",
-        "title": "JMeter: Show Results"
+        "title": "JMeter: Show Results",
+        "icon": "$(list-flat)"
       },
       {
         "command": "jmeter.clearRecent",
-        "title": "JMeter: Clear Recent"
+        "title": "JMeter: Clear Recent",
+        "icon": "$(clear-all)"
       },
       {
         "command": "jmeter.removeRecent",
-        "title": "JMeter: Remove Recent"
+        "title": "Remove Recent",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
