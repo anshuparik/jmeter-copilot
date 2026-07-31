@@ -99,6 +99,10 @@ export class JtlParser {
       return [];
     }
 
+    if (this.isCsv(normalized)) {
+      return this.parseCsv(normalized, maxResponseBytes);
+    }
+
     if (!normalized.startsWith('<testResults')) {
       const idx = normalized.indexOf('<testResults');
       if (idx >= 0) {
@@ -163,6 +167,92 @@ export class JtlParser {
     }
     const content = fs.readFileSync(filePath, 'utf8');
     return this.parseString(content, maxResponseBytes);
+  }
+
+  private static isCsv(content: string): boolean {
+    const firstLine = content.split(/\r?\n/, 1)[0].toLowerCase();
+    return firstLine.includes('timestamp') && firstLine.includes('elapsed') && firstLine.includes('responsecode');
+  }
+
+  private static parseCsv(content: string, maxResponseBytes?: number): SampleResult[] {
+    const lines = content.split(/\r?\n/).filter((line) => line.trim().length > 0);
+    if (lines.length < 2) {
+      return [];
+    }
+    const headers = this.parseCsvLine(lines[0]).map((header) => header.trim());
+    const column = (name: string) => headers.indexOf(name);
+    const get = (fields: string[], name: string): string | undefined => {
+      const idx = column(name);
+      return idx >= 0 ? fields[idx] : undefined;
+    };
+    const maxBytes = maxResponseBytes ?? vscode.workspace.getConfiguration('jmeter').get<number>('maxResponseBytes', 100000);
+    const samples: SampleResult[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const fields = this.parseCsvLine(lines[i]);
+      const rawBody = get(fields, 'responseData');
+      let responseData: string | undefined = rawBody;
+      let bodyTruncated = false;
+      if (rawBody && rawBody.length > maxBytes) {
+        responseData = rawBody.slice(0, maxBytes);
+        bodyTruncated = true;
+      }
+      const successValue = get(fields, 'success');
+      samples.push({
+        label: get(fields, 'label'),
+        responseCode: get(fields, 'responseCode'),
+        responseMessage: get(fields, 'responseMessage'),
+        success: successValue ? successValue.toLowerCase() === 'true' : undefined,
+        elapsed: toNumber(get(fields, 'elapsed')),
+        latency: toNumber(get(fields, 'Latency')) ?? toNumber(get(fields, 'latency')),
+        timestamp: toNumber(get(fields, 'timeStamp')) ?? toNumber(get(fields, 'timestamp')),
+        thread: get(fields, 'threadName'),
+        url: get(fields, 'URL') ?? get(fields, 'url'),
+        method: get(fields, 'method'),
+        queryString: get(fields, 'queryString'),
+        cookies: get(fields, 'cookies'),
+        requestHeader: get(fields, 'requestHeader'),
+        samplerData: get(fields, 'samplerData'),
+        responseHeader: get(fields, 'responseHeader'),
+        responseData,
+        requestData: get(fields, 'requestData'),
+        bodyTruncated,
+        assertions: [],
+        subResults: []
+      });
+    }
+
+    return samples;
+  }
+
+  private static parseCsvLine(line: string): string[] {
+    const fields: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          current += ch;
+        }
+      } else if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        fields.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    fields.push(current);
+    return fields;
   }
 }
 

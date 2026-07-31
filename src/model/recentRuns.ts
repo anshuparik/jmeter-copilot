@@ -1,16 +1,18 @@
 import * as vscode from 'vscode';
 
 export interface RecentRunEntry {
+  id: string;
   jmxPath: string;
   lastRunAt: number;
   passed: number;
   failed: number;
   total: number;
+  jtlPath?: string;
 }
 
 export class RecentRunsStore {
   private readonly key = 'jmeter.recentRuns';
-  private readonly maxEntries = 15;
+  private readonly maxEntries = 30;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -21,14 +23,13 @@ export class RecentRunsStore {
 
   public async add(entry: RecentRunEntry): Promise<void> {
     const items = await this.list();
-    const filtered = items.filter((item) => item.jmxPath !== entry.jmxPath);
-    filtered.unshift(entry);
-    await this.context.globalState.update(this.key, filtered.slice(0, this.maxEntries));
+    items.unshift(entry);
+    await this.context.globalState.update(this.key, items.slice(0, this.maxEntries));
   }
 
-  public async remove(jmxPath: string): Promise<void> {
+  public async remove(runId: string): Promise<void> {
     const items = await this.list();
-    const filtered = items.filter((item) => item.jmxPath !== jmxPath);
+    const filtered = items.filter((item) => item.id !== runId);
     await this.context.globalState.update(this.key, filtered);
   }
 

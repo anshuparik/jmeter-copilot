@@ -1,8 +1,8 @@
 {
   "name": "jmeter-vscode-copilot",
-  "displayName": "JMeter VS Code Copilot",
-  "description": "Run JMeter tests from VS Code with Copilot integration",
-  "version": "0.1.1",
+  "displayName": "JMeter Copilot",
+  "description": "A Copilot-powered JMeter assistant: run test plans, inspect results and failures, and fix & verify your JMX scripts right from VS Code Chat.",
+  "version": "0.1.3",
   "icon": "media/jmeter.png",
   "publisher": "anshuparik",
   "license": "MIT",

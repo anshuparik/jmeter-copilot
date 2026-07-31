@@ -31,16 +31,27 @@ export class RunController implements vscode.Disposable {
   }
 
   public async start(jmxPath: string): Promise<TestRun> {
+    if (this.state.status === 'running') {
+      throw new Error('A JMeter test is already running. Stop it before starting another.');
+    }
     this.stopPolling();
     this.state = { status: 'running', currentPlan: jmxPath, sampleCount: 0, summary: { total: 0, passed: 0, failed: 0 } };
     this._onDidChangeState.fire(this.state);
 
-    const run = await this.runner.run(jmxPath, (jtlPath) => this.pollFile(jtlPath));
-    this.runStore.add(run);
-    this.state = { status: 'done', currentPlan: jmxPath, summary: run.summary, sampleCount: run.summary.total };
-    this._onDidChangeState.fire(this.state);
-    this._onDidFinish.fire(run);
-    return run;
+    try {
+      const run = await this.runner.run(jmxPath, (jtlPath) => this.pollFile(jtlPath));
+      this.stopPolling();
+      this.runStore.add(run);
+      this.state = { status: 'done', currentPlan: jmxPath, summary: run.summary, sampleCount: run.summary.total };
+      this._onDidChangeState.fire(this.state);
+      this._onDidFinish.fire(run);
+      return run;
+    } catch (error) {
+      this.stopPolling();
+      this.state = { status: 'idle', currentPlan: jmxPath };
+      this._onDidChangeState.fire(this.state);
+      throw error;
+    }
   }
 
   public stop(): void {

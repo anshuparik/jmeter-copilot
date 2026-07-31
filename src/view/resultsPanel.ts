@@ -6,6 +6,7 @@ export type ResultsPanelMessage =
   | { type: 'live'; summary: { total: number; passed: number; failed: number }; samples?: SampleResult[] }
   | { type: 'results'; run: TestRun }
   | { type: 'plan'; path: string }
+  | { type: 'error'; message: string }
   | { type: 'clear' };
 
 export class ResultsPanel implements vscode.Disposable {
@@ -319,9 +320,9 @@ export class ResultsPanel implements vscode.Disposable {
 </head>
 <body>
   <div class="toolbar">
-    <button class="btn btn-start" onclick="sendCommand('start')">▶ Start</button>
-    <button class="btn btn-stop" onclick="sendCommand('stop')">■ Stop</button>
-    <button class="btn btn-clear" onclick="onclickClear()">Clear</button>
+    <button class="btn btn-start" id="btn-start" onclick="sendCommand('start')">▶ Start</button>
+    <button class="btn btn-stop" id="btn-stop" onclick="sendCommand('stop')" disabled>■ Stop</button>
+    <button class="btn btn-clear" id="btn-clear" onclick="onclickClear()" disabled>Clear</button>
     <span class="plan-title" id="plan-name">No plan selected</span>
     <span class="status-badge" id="status-badge">Idle</span>
   </div>
@@ -397,6 +398,18 @@ export class ResultsPanel implements vscode.Disposable {
       vscode.postMessage({ command });
     }
 
+    function setButtons(state) {
+      const start = document.getElementById('btn-start');
+      const stop = document.getElementById('btn-stop');
+      const clear = document.getElementById('btn-clear');
+      start.disabled = state === 'running';
+      stop.disabled = state !== 'running';
+      clear.disabled = state !== 'done';
+      start.style.opacity = start.disabled ? '0.5' : '';
+      stop.style.opacity = stop.disabled ? '0.5' : '';
+      clear.style.opacity = clear.disabled ? '0.5' : '';
+    }
+
     function onclickClear() {
       sendCommand('clear');
     }
@@ -436,18 +449,21 @@ export class ResultsPanel implements vscode.Disposable {
       }
 
       if (msg.type === 'running') {
-        updateBadge('running', \`⚡ Running... \${msg.sampleCount || 0} samples\`);
+        setButtons('running');
+        updateBadge('running', '⚡ Starting JMeter...');
       }
 
       if (msg.type === 'live') {
+        setButtons('running');
         const s = msg.summary || { total: 0, passed: 0, failed: 0 };
-        updateBadge('running', \`⚡ Running... \${s.total} samples (\${s.failed} failed)\`);
+        updateBadge('running', s.total === 0 ? '⚡ Starting JMeter... (no samples yet)' : \`⚡ Running... \${s.total} samples (\${s.failed} failed)\`);
         if (msg.samples) {
           renderSampleTree(msg.samples);
         }
       }
 
       if (msg.type === 'results') {
+        setButtons('done');
         const run = msg.run;
         if (run) {
           if (run.jmxPath) updatePlanName(run.jmxPath);
@@ -458,9 +474,15 @@ export class ResultsPanel implements vscode.Disposable {
         }
       }
 
+      if (msg.type === 'error') {
+        setButtons('idle');
+        updateBadge('', 'Error');
+      }
+
       if (msg.type === 'clear') {
         currentSamples = [];
         selectedSample = null;
+        setButtons('idle');
         updateBadge('', 'Idle');
         document.getElementById('tree-list').innerHTML = '<div class="empty-state">No results available</div>';
         resetDetails();
@@ -645,6 +667,8 @@ export class ResultsPanel implements vscode.Disposable {
       document.getElementById('res-headers').textContent = sample.responseHeader || 'None';
       document.getElementById('res-body').textContent = sample.responseData || 'None';
     }
+
+    setButtons('idle');
   </script>
 </body>
 </html>`;

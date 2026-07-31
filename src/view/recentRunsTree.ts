@@ -19,31 +19,24 @@ export class RecentRunsTreeDataProvider implements vscode.TreeDataProvider<Recen
 
   public async getTreeItem(element: RecentRunEntry): Promise<vscode.TreeItem> {
     const exists = fs.existsSync(element.jmxPath);
-    const relativeTime = this.getRelativeTime(element.lastRunAt);
-    const display = `${element.passed}/${element.total} passed`;
-    const item = new vscode.TreeItem(display, vscode.TreeItemCollapsibleState.None);
-    item.description = `${relativeTime}${exists ? '' : ' (missing)'}`;
-    item.tooltip = `${element.jmxPath}${exists ? '' : ' (missing file)'}`;
+    const planName = this.getPlanName(element.jmxPath);
+    const time = this.getTimeString(element.lastRunAt);
+    const status = `${element.passed}/${element.total} passed`;
+    const item = new vscode.TreeItem(planName, vscode.TreeItemCollapsibleState.None);
+    item.description = `${time} · ${status}`;
+    item.tooltip = `${element.jmxPath}\n${status}\n${new Date(element.lastRunAt).toLocaleString()}${exists ? '' : '\n(missing file)'}`;
     item.contextValue = exists ? 'jmeterRecentRun' : 'jmeterRecentRunMissing';
-    item.command = exists ? { command: 'jmeter.selectTestPlan', title: 'Open', arguments: [vscode.Uri.file(element.jmxPath)] } : undefined;
-    item.iconPath = exists ? undefined : new vscode.ThemeIcon('warning');
+    item.command = exists ? { command: 'jmeter.showRecentRun', title: 'Show Results', arguments: [element] } : undefined;
+    item.iconPath = exists ? new vscode.ThemeIcon('history') : new vscode.ThemeIcon('warning');
     return item;
   }
 
-  private getRelativeTime(timestamp: number): string {
-    const diffMs = Date.now() - timestamp;
-    const diffMinutes = Math.floor(diffMs / 60000);
-    if (diffMinutes < 1) {
-      return 'just now';
-    }
-    if (diffMinutes < 60) {
-      return `${diffMinutes}m ago`;
-    }
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    }
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d ago`;
+  private getPlanName(jmxPath: string): string {
+    const base = jmxPath.split(/[\\/]/).pop() || jmxPath;
+    return base.replace(/\.jmx$/i, '');
+  }
+
+  private getTimeString(timestamp: number): string {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 }

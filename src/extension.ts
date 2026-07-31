@@ -115,7 +115,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   void vscode.commands.executeCommand('setContext', 'jmeter.isReady', true);
   void vscode.commands.executeCommand('workbench.view.extension.jmeterRunner');
-  void vscode.commands.executeCommand('workbench.view.focus', 'jmeterTestPlans');
 }
 
 export function deactivate() {}
