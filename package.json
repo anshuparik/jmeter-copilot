@@ -5,6 +5,10 @@
   "version": "0.1.0",
   "publisher": "replace-me",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anshuparik/jmeter-copilot.git"
+  },
   "private": false,
   "engines": {
     "vscode": "^1.95.0"
