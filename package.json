@@ -1,10 +1,10 @@
 {
-  "name": "jmeter-copilot",
-  "displayName": "JMeter Copilot",
+  "name": "jmeter-vscode-copilot",
+  "displayName": "JMeter VS Code Copilot",
   "description": "Run JMeter tests from VS Code with Copilot integration",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "icon": "media/jmeter.png",
-  "publisher": "replace-me",
+  "publisher": "anshuparik",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -303,6 +303,7 @@
     }
   },
   "activationEvents": [
+    "onStartupFinished",
     "workspaceContains:**/*.jmx"
   ]
 }
