@@ -213,23 +213,8 @@
       ],
       "view/title": [
         {
-          "command": "jmeter.showResults",
-          "when": "view == jmeterTestPlans",
-          "group": "navigation"
-        },
-        {
-          "command": "jmeter.stop",
-          "when": "view == jmeterTestPlans",
-          "group": "navigation"
-        },
-        {
           "command": "jmeter.refreshTestPlans",
           "when": "view == jmeterTestPlans",
-          "group": "navigation"
-        },
-        {
-          "command": "jmeter.clearRecent",
-          "when": "view == jmeterRecentRuns",
           "group": "navigation"
         }
       ],

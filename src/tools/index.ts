@@ -1,12 +1,18 @@
 import * as vscode from 'vscode';
 import { JMeterRunner } from '../jmeter/runner';
+import { RunController } from '../runController';
 import { RunStore } from '../model/runStore';
 import { getJmeterFailures } from './getJmeterFailures';
 import { getJmeterSampleDetail } from './getJmeterSampleDetail';
 import { listJmeterTests } from './listJmeterTests';
 import { runJmeterTest } from './runJmeterTest';
 
-export function registerTools(context: vscode.ExtensionContext, runner: JMeterRunner, runStore: RunStore): void {
+export function registerTools(
+  context: vscode.ExtensionContext,
+  runner: JMeterRunner,
+  runStore: RunStore,
+  runController?: RunController
+): void {
   const tools = [
     vscode.lm.registerTool('run_jmeter_test', {
       invoke: async (options: vscode.LanguageModelToolInvocationOptions<unknown>) => {
@@ -14,20 +20,23 @@ export function registerTools(context: vscode.ExtensionContext, runner: JMeterRu
         if (!planPath) {
           return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart('No plan path provided.')]);
         }
-        const message = await runJmeterTest(runner, planPath);
+        const message = await runJmeterTest(runController ?? runner, planPath);
         return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(message)]);
       }
     }),
     vscode.lm.registerTool('get_jmeter_failures', {
-      invoke: async () => {
-        const text = getJmeterFailures(runStore);
+      invoke: async (options: vscode.LanguageModelToolInvocationOptions<unknown>) => {
+        const runId = (options.input as { runId?: string } | undefined)?.runId;
+        const text = getJmeterFailures(runStore, runId);
         return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(text)]);
       }
     }),
     vscode.lm.registerTool('get_jmeter_sample_detail', {
       invoke: async (options: vscode.LanguageModelToolInvocationOptions<unknown>) => {
-        const label = (options.input as { label?: string } | undefined)?.label ?? '';
-        const text = getJmeterSampleDetail(runStore, label);
+        const input = options.input as { label?: string; runId?: string } | undefined;
+        const label = input?.label ?? '';
+        const runId = input?.runId;
+        const text = getJmeterSampleDetail(runStore, label, runId);
         return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(text)]);
       }
     }),
@@ -42,3 +51,4 @@ export function registerTools(context: vscode.ExtensionContext, runner: JMeterRu
 
   context.subscriptions.push(...tools);
 }
+

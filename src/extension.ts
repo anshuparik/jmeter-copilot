@@ -42,11 +42,12 @@ export function activate(context: vscode.ExtensionContext) {
     recentRunsStore,
     runStore
   });
-  registerTools(context, runner, runStore);
+  registerTools(context, runner, runStore, runController);
 
   const updateStatus = (state: { status: string; summary?: { total: number; passed: number; failed: number }; sampleCount?: number }) => {
     if (state.status === 'running') {
       statusBar.updateRunning(state.sampleCount ?? 0);
+      resultsPanel.postMessage({ type: 'running', sampleCount: state.sampleCount ?? 0 });
       return;
     }
 
@@ -59,9 +60,9 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   runController.onDidChangeState(updateStatus);
-  runController.onDidUpdateSamples((summary) => {
-    statusBar.updateRunning(summary.total);
-    resultsPanel.postMessage({ type: 'live', summary });
+  runController.onDidUpdateSamples((event) => {
+    statusBar.updateRunning(event.total);
+    resultsPanel.postMessage({ type: 'live', summary: event, samples: event.samples });
   });
   runController.onDidFinish((run) => {
     resultsPanel.createOrShow();
@@ -105,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  const chatParticipant = new JMeterChatParticipant();
+  const chatParticipant = new JMeterChatParticipant(runController, runStore);
   chatParticipant.register(context);
 
   context.subscriptions.push(statusBar);

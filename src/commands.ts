@@ -39,6 +39,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       return;
     }
     setCurrentPlan(resolved);
+    deps.resultsPanel.postMessage({ type: 'plan', path: resolved.fsPath });
     await vscode.window.showTextDocument(resolved, { preview: false });
   }));
 
@@ -60,7 +61,10 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       deps.outputChannel.appendLine(`Run failed: ${message}`);
-      void vscode.window.showErrorMessage(message);
+      const choice = await vscode.window.showErrorMessage(message, 'Set JMeter Path');
+      if (choice === 'Set JMeter Path') {
+        void vscode.commands.executeCommand('workbench.action.openSettings', 'jmeter');
+      }
     }
   }));
 

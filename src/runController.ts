@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { JMeterRunner } from './jmeter/runner';
 import { RunStore } from './model/runStore';
-import { TestRun } from './model/types';
+import { TestRun, SampleResult } from './model/types';
 
 export type RunStatus = 'idle' | 'running' | 'done';
 
@@ -17,7 +17,7 @@ export class RunController implements vscode.Disposable {
   private pollTimer?: NodeJS.Timeout;
   private state: RunState = { status: 'idle' };
   private readonly _onDidChangeState = new vscode.EventEmitter<RunState>();
-  private readonly _onDidUpdateSamples = new vscode.EventEmitter<{ total: number; passed: number; failed: number }>();
+  private readonly _onDidUpdateSamples = new vscode.EventEmitter<{ total: number; passed: number; failed: number; samples?: SampleResult[] }>();
   private readonly _onDidFinish = new vscode.EventEmitter<TestRun>();
 
   public readonly onDidChangeState = this._onDidChangeState.event;
@@ -77,7 +77,7 @@ export class RunController implements vscode.Disposable {
     }
   }
 
-  private async computeSummary(jtlPath: string): Promise<{ total: number; passed: number; failed: number }> {
+  private async computeSummary(jtlPath: string): Promise<{ total: number; passed: number; failed: number; samples?: SampleResult[] }> {
     if (!fs.existsSync(jtlPath)) {
       return { total: 0, passed: 0, failed: 0 };
     }
@@ -95,7 +95,7 @@ export class RunController implements vscode.Disposable {
     const total = samples.length;
     const passed = samples.filter((sample) => sample.success !== false).length;
     const failed = total - passed;
-    return { total, passed, failed };
+    return { total, passed, failed, samples };
   }
 
   public dispose(): void {

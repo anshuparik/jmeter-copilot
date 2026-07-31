@@ -1,7 +1,7 @@
 import * as fs from 'fs';
+import * as vscode from 'vscode';
+import { XMLParser } from 'fast-xml-parser';
 import { SampleResult, AssertionResult } from '../model/types';
-
-const XMLParser = require('fast-xml-parser');
 
 function decodeEntities(value: string): string {
   if (!value) return value;
@@ -17,6 +17,9 @@ function decodeEntities(value: string): string {
 
 function toString(value: unknown): string | undefined {
   if (value === undefined || value === null) return undefined;
+  if (typeof value === 'object' && value !== null && '_text' in value) {
+    return decodeEntities(String((value as any)._text));
+  }
   if (typeof value === 'string') return decodeEntities(value);
   return String(value);
 }
@@ -41,18 +44,29 @@ function mapAssertion(node: any): AssertionResult {
   };
 }
 
-function mapSample(node: any): SampleResult {
-  const assertionResults = Array.isArray(node?.assertionResult)
-    ? node.assertionResult.map(mapAssertion)
-    : node?.assertionResult
-      ? [mapAssertion(node.assertionResult)]
+function mapSample(node: any, maxBytes: number = 100000): SampleResult {
+  const rawAssertions = node?.assertionResult;
+  const assertionResults: AssertionResult[] = Array.isArray(rawAssertions)
+    ? rawAssertions.map(mapAssertion)
+    : rawAssertions
+      ? [mapAssertion(rawAssertions)]
       : [];
 
-  const subResults = Array.isArray(node?.httpSample)
-    ? node.httpSample.map(mapSample)
-    : node?.httpSample
-      ? [mapSample(node.httpSample)]
-      : [];
+  const rawHttp = node?.httpSample;
+  const rawSample = node?.sample;
+
+  const childHttp: any[] = Array.isArray(rawHttp) ? rawHttp : rawHttp ? [rawHttp] : [];
+  const childSample: any[] = Array.isArray(rawSample) ? rawSample : rawSample ? [rawSample] : [];
+  const allChildren = [...childHttp, ...childSample];
+
+  const subResults: SampleResult[] = allChildren.map((c) => mapSample(c, maxBytes));
+
+  let rawResponseBody = toString(node?.responseData);
+  let bodyTruncated = false;
+  if (rawResponseBody && rawResponseBody.length > maxBytes) {
+    rawResponseBody = rawResponseBody.slice(0, maxBytes);
+    bodyTruncated = true;
+  }
 
   return {
     label: toString(node?.lb),
@@ -63,48 +77,92 @@ function mapSample(node: any): SampleResult {
     latency: toNumber(node?.lt),
     timestamp: toNumber(node?.ts),
     thread: toString(node?.tn),
-    url: toString(node?.java.net.URL) || toString(node?.url),
+    url: toString(node?.['java.net.URL']) || toString(node?.url),
     method: toString(node?.method),
     queryString: toString(node?.queryString),
     cookies: toString(node?.cookies),
     requestHeader: toString(node?.requestHeader),
     samplerData: toString(node?.samplerData),
     responseHeader: toString(node?.responseHeader),
-    responseData: toString(node?.responseData),
+    responseData: rawResponseBody,
     requestData: toString(node?.requestData),
+    bodyTruncated,
     assertions: assertionResults,
     subResults
   };
 }
 
 export class JtlParser {
-  public static parseString(content: string): SampleResult[] {
-    const normalized = content.trim();
-    const safeContent = normalized.endsWith('</testResults>') ? normalized : `${normalized}</testResults>`;
+  public static parseString(content: string, maxResponseBytes?: number): SampleResult[] {
+    let normalized = content.trim();
+    if (!normalized) {
+      return [];
+    }
+
+    if (!normalized.startsWith('<testResults')) {
+      const idx = normalized.indexOf('<testResults');
+      if (idx >= 0) {
+        normalized = normalized.slice(idx);
+      } else {
+        normalized = `<testResults version="1.2">${normalized}`;
+      }
+    }
+
+    if (!normalized.endsWith('</testResults>')) {
+      const lastHttpClose = normalized.lastIndexOf('</httpSample>');
+      const lastSampleClose = normalized.lastIndexOf('</sample>');
+      const lastClose = Math.max(lastHttpClose >= 0 ? lastHttpClose + 13 : -1, lastSampleClose >= 0 ? lastSampleClose + 9 : -1);
+      if (lastClose > 0) {
+        normalized = `${normalized.slice(0, lastClose)}\n</testResults>`;
+      } else {
+        normalized = `${normalized}\n</testResults>`;
+      }
+    }
+
     const options = {
       ignoreAttributes: false,
       attributeNamePrefix: '',
       preserveOrder: false,
       processEntities: false,
       textNodeName: '_text',
-      arrayMode: true,
-      stopNodes: ['testResults']
+      isArray: (name: string) => name === 'sample' || name === 'httpSample' || name === 'assertionResult'
     };
 
-    const parsed = XMLParser.parse(safeContent, options);
-    const samples = Array.isArray(parsed?.sample)
-      ? parsed.sample.map(mapSample)
-      : parsed?.sample
-        ? [mapSample(parsed.sample)]
-        : [];
-    return samples;
+    try {
+      const parser = new XMLParser(options);
+      const parsed = parser.parse(normalized);
+      const testResults = parsed?.testResults;
+      if (!testResults) {
+        return [];
+      }
+
+      const maxBytes = maxResponseBytes ?? vscode.workspace.getConfiguration('jmeter').get<number>('maxResponseBytes', 100000);
+
+      const samplesList: any[] = [];
+      if (Array.isArray(testResults.sample)) {
+        samplesList.push(...testResults.sample);
+      } else if (testResults.sample) {
+        samplesList.push(testResults.sample);
+      }
+
+      if (Array.isArray(testResults.httpSample)) {
+        samplesList.push(...testResults.httpSample);
+      } else if (testResults.httpSample) {
+        samplesList.push(testResults.httpSample);
+      }
+
+      return samplesList.map((node) => mapSample(node, maxBytes));
+    } catch {
+      return [];
+    }
   }
 
-  public static parseFile(filePath: string): SampleResult[] {
+  public static parseFile(filePath: string, maxResponseBytes?: number): SampleResult[] {
     if (!fs.existsSync(filePath)) {
       return [];
     }
     const content = fs.readFileSync(filePath, 'utf8');
-    return this.parseString(content);
+    return this.parseString(content, maxResponseBytes);
   }
 }
+

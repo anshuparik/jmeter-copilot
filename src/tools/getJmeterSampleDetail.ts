@@ -1,15 +1,33 @@
 import { RunStore } from '../model/runStore';
+import { SampleResult } from '../model/types';
 
-export function getJmeterSampleDetail(runStore: RunStore, label: string): string {
-  const latest = runStore.latest();
-  if (!latest) {
+function flattenSamples(samples: SampleResult[]): SampleResult[] {
+  const result: SampleResult[] = [];
+  for (const s of samples) {
+    result.push(s);
+    if (s.subResults && s.subResults.length > 0) {
+      result.push(...flattenSamples(s.subResults));
+    }
+  }
+  return result;
+}
+
+export function getJmeterSampleDetail(runStore: RunStore, label: string, runId?: string): string {
+  const run = runStore.getRun(runId);
+  if (!run) {
     return 'No JMeter run available.';
   }
 
-  const match = latest.samples.find((sample) => sample.label === label);
+  const allSamples = flattenSamples(run.samples);
+  const match = allSamples.find((sample) => sample.label === label);
   if (!match) {
-    return `No sample found for label: ${label}`;
+    const available = allSamples
+      .map((s) => s.label)
+      .filter(Boolean)
+      .join(', ');
+    return `No sample found for label: "${label}". Available labels: ${available || 'none'}`;
   }
 
   return JSON.stringify(match, null, 2);
 }
+
