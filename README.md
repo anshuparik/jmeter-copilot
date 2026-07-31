@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="media/banner.svg" alt="JMeter Copilot" width="100%" />
+</p>
+
 # ⚡ JMeter Copilot
 
 A **Copilot-powered Apache JMeter assistant** for Visual Studio Code. Run JMeter test plans, inspect live and past results, review request/response details, and let Copilot **fix and verify your JMX scripts** — all from the Chat view, the sidebar, or the command palette.
