@@ -24,19 +24,23 @@ A **Copilot-powered Apache JMeter assistant** for Visual Studio Code. Run JMeter
 
 ## 📦 Installation
 
-The extension is distributed as a VSIX. There is no marketplace listing yet — install it directly:
+### Option A — Install from the VS Code Marketplace (recommended)
 
-### Option A — Install from the VSIX file
+1. Open the **Extensions** view (`Ctrl+Shift+X`).
+2. Search for **"JMeter Copilot"**.
+3. Click **Install**, then **reload** the window (`Ctrl+Shift+P` → `Developer: Reload Window`).
+
+Or install from the command line:
 
 ```bash
-code --install-extension jmeter-vscode-copilot-0.1.5.vsix
+code --install-extension anshupareek.jmeter-vscode-copilot
 ```
 
-### Option B — From the Extensions view
+### Option B — Install from a VSIX file
 
-1. Open the Extensions view (`Ctrl+Shift+X`).
-2. Click **⋮ → Install from VSIX…**.
-3. Select the `.vsix` file.
+1. Download `jmeter-vscode-copilot-<version>.vsix`.
+2. In the Extensions view, click **⋮ → Install from VSIX…**.
+3. Select the `.vsix` file, then reload the window.
 
 ### Option C — Build from source
 
