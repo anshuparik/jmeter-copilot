@@ -6,9 +6,20 @@
 
 A **Copilot-powered Apache JMeter assistant** for Visual Studio Code. Run JMeter test plans, inspect live and past results, review request/response details, and let Copilot **fix and verify your JMX scripts** — all from the Chat view, the sidebar, or the command palette.
 
-![Version](https://img.shields.io/badge/version-0.1.5-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![VS Code](https://img.shields.io/badge/VS%20Code-1.95%2B-007ACC)
+![Version](https://img.shields.io/badge/version-0.1.7-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![VS Code](https://img.shields.io/badge/VS%20Code-1.95%2B-007ACC)
 
 ---
+
+## 🎬 Demo
+
+<video controls poster="media/jmeter.png" width="100%">
+  <source src="media/demo.mp4" type="video/mp4" />
+  <a href="https://github.com/anshuparik/jmeter-copilot/raw/main/media/demo.mp4">▶ Watch the demo video</a>
+</video>
+
+*See JMeter Copilot in action: run a plan, stream live results, and fix failures with Copilot.*
+
+> 📺 **Watch the demo:** [demo.mp4 (GitHub)](https://github.com/anshuparik/jmeter-copilot/raw/main/media/demo.mp4)
 
 ## ✨ What it does
 
