@@ -12,11 +12,13 @@ A **Copilot-powered Apache JMeter assistant** for Visual Studio Code. Run JMeter
 
 ## 🎬 Demo
 
-<video controls poster="media/jmeter.png" src="https://github.com/anshuparik/jmeter-copilot/releases/download/demo-assets/demo_720p.mp4" style="max-width: 100%;"></video>
+<p align="center">
+  <img src="media/demo.gif" alt="JMeter Copilot demo" width="75%" />
+</p>
 
 *See JMeter Copilot in action: run a plan, stream live results, and fix failures with Copilot.*
 
-> 📺 **Watch the demo:** [demo_720p.mp4 (GitHub)](https://github.com/anshuparik/jmeter-copilot/releases/download/demo-assets/demo_720p.mp4)
+> 📺 **Full demo video:** [demo_720p.mp4 (GitHub)](https://github.com/anshuparik/jmeter-copilot/releases/download/demo-assets/demo_720p.mp4)
 
 ## ✨ What it does
 
