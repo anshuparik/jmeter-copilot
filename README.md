@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="media/banner.svg" alt="JMeter Copilot" width="100%" />
+  <img src="media/banner.png" alt="JMeter Copilot" width="100%" />
 </p>
 
 # ⚡ JMeter Copilot
