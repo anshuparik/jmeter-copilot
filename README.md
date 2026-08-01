@@ -161,6 +161,23 @@ Then edit the JMX assertion (`211` → `200`), re-run, and the failures tool rep
 
 ---
 
+## ☕ Support the project
+
+If JMeter Copilot saves you time, a small tip would make my day! ❤️
+
+- **Sponsor on GitHub** (international, cards/PayPal): [github.com/sponsors/anshuparik](https://github.com/sponsors/anshuparik)
+- **UPI (India)** — scan the QR or pay to `7738543800@yescred`:
+
+<p align="center">
+  <a href="upi://pay?pa=7738543800@yescred&pn=Anshupareek%20JMeter%20Copilot&cu=INR">
+    <img src="media/upi-qr.png" alt="UPI: 7738543800@yescred" width="200" />
+  </a>
+</p>
+
+> Every contribution (no matter how small) motivates me to keep improving the extension. Thank you! 🙏
+
+---
+
 ## 🔗 Links
 
 - **Source & issues:** [github.com/anshuparik/jmeter-copilot](https://github.com/anshuparik/jmeter-copilot)
