@@ -4,7 +4,7 @@
   "description": "A Copilot-powered JMeter assistant: run test plans, inspect results and failures, and fix & verify your JMX scripts right from VS Code Chat.",
   "version": "0.1.3",
   "icon": "media/jmeter.png",
-  "publisher": "anshuparik",
+  "publisher": "anshupareek",
   "license": "SEE LICENSE IN LICENSE",
   "qna": "marketplace",
   "pricing": "Free",
