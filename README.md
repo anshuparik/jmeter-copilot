@@ -165,7 +165,7 @@ Then edit the JMX assertion (`211` → `200`), re-run, and the failures tool rep
 
 If JMeter Copilot saves you time, a small tip would make my day! ❤️
 
-- **Sponsor on GitHub** (international, cards/PayPal): [github.com/sponsors/anshuparik](https://github.com/sponsors/anshuparik)
+- **Donate via PayPal** (international, cards/PayPal): [paypal.me/parik.arvind](https://paypal.me/parik.arvind) or send to `parik.arvind@gmail.com`
 - **UPI (India)** — scan the QR or pay to `7738543800@yescred`:
 
 <p align="center">

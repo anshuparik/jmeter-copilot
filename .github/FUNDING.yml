@@ -1,6 +1,5 @@
 # These are supported funding model platforms
 
-github: anshuparik # GitHub Sponsors (international)
-buy_me_a_coffee: anshupareek # Optional, when supported in India
-custom: # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-citation-files
-  - https://github.com/sponsors/anshuparik
+custom:
+  - https://paypal.me/parik.arvind
+  - upi://pay?pa=7738543800@yescred&pn=Anshupareek%20JMeter%20Copilot&cu=INR
